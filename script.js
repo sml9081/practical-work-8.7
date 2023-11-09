@@ -1,125 +1,71 @@
-let minValue = parseInt(prompt('Минимальное знание числа для игры','0'));
-let maxValue = parseInt(prompt('Максимальное знание числа для игры','100'));
-alert(`Загадайте любое целое число от ${minValue} до ${maxValue}, а я его угадаю`);
-
+let minValue;
+let maxValue;
 let answerNumber;
-searchNumber();
-
+let sign = '';
 let orderNumber = 1;
 let gameRun = true;
-
+let defaultMinValue = 0;
+let defaultMaxValue = 100;
 
 const orderNumberField = document.getElementById('orderNumberField');
 const answerField = document.getElementById('answerField');
 
-orderNumberField.innerText = orderNumber;
-putText();
-
-// Проверка через операцию  дизъюнкции при вводе текста который не интерпритируется как число(NaN)
-if (isNaN(minValue) || isNaN(maxValue)) {
-    minValue = 0;
-    maxValue = 100;
+function checkInterval(){
+    minValue = (!isNaN(minValue) && minValue > -1000) ? minValue : defaultMinValue;
+    maxValue = (!isNaN(maxValue) && maxValue < 1000) ? maxValue : defaultMaxValue;
+    if (minValue >= maxValue){
+        minValue = 0;
+        maxValue = 100;
+    }
 }
 
-// Тенарный оператор установливает ближайшую границу для минимальных и максимальных чисел 
-if (!isNaN(minValue)){
-    minValue = (minValue <=-1000) ? -999 : minValue;
-} else {
-    minValue = 0;
+function runGame(message){
+    orderNumber = 1;
+    gameRun = true;
+    answerField.innerText = message;
+    orderNumberField.innerText = orderNumber;
+    minValue = parseInt(prompt('Минимальное знание числа для игры', defaultMinValue));
+    maxValue = parseInt(prompt('Максимальное знание числа для игры', defaultMaxValue));
+    checkInterval();
+    alert(`Загадайте любое целое число от ${minValue} до ${maxValue}, а я его угадаю`);
+    if (searchNumber()){
+        putText();
+    }
 }
 
-if (!isNaN(maxValue)){
-    maxValue = (maxValue >= 1000) ? 999 : maxValue;
-} else {
-    maxValue = 100;
+function wrongNumber(){
+    let phraseRandom = Math.round( Math.random());
+    let answerPhrase = (phraseRandom === 1) ?
+        `Вы загадали неправильное число!\n\u{1F914}` :
+        `Я сдаюсь..\n\u{1F92F}`;
+
+    answerField.innerText = answerPhrase;
+    gameRun = false;
 }
 
-document.getElementById('btnRetry').addEventListener('click', function () {
-    minValue = 0;
-    maxValue = 100;
-    orderNumber = 0;
-})
-
-document.getElementById('btnOver').addEventListener('click', function () {
-
+function guessAnotherNumber(condition){
     if (gameRun){
-        if (minValue === maxValue){
-            const phraseRandom = Math.round( Math.random());
-            const answerPhrase = (phraseRandom === 1) ?
-                `Вы загадали неправильное число!\n\u{1F914}` :
-                `Я сдаюсь..\n\u{1F92F}`;
-
-            answerField.innerText = answerPhrase;
-            gameRun = false;
-        } else {
-            searchNumber('>');
+        let result = searchNumber(condition);
+        if (result){
             orderNumber++;
             orderNumberField.innerText = orderNumber; 
             putText();
         }
     }
-    
-})
-
-document.getElementById('btnLess').addEventListener('click', function () {
-    if (gameRun){
-        if (minValue === maxValue){
-            const phraseRandom = Math.round( Math.random());
-            const answerPhrase = (phraseRandom === 1) ?
-                `Вы загадали неправильное число!\n\u{1F914}` :
-                `Я сдаюсь..\n\u{1F92F}`;
-
-            answerField.innerText = answerPhrase;
-            gameRun = false;
-        } else {
-            searchNumber('<');
-            orderNumber++;
-            orderNumberField.innerText = orderNumber;
-            putText();
-        }
-    }
-})
-
-document.getElementById('btnEqual').addEventListener('click', function () {
-    if (gameRun){
-        let phraseRandom = Math.round(Math.random() * 3);
-        let answerPhrase;
-        if (phraseRandom === 1) {
-                answerPhrase = 'Я всегда угадываю!\n\u{1F44C}';
-        } else if (phraseRandom === 2) {
-               answerPhrase = 'Угадал!\n\u{1F60E}';
-            } else {
-               answerPhrase = 'Это было просто\n\u{1F525}';
-            };
-        answerField.innerText = answerPhrase;
-        gameRun = true;
-    }
-})
-
-document.getElementById('btnRetry').addEventListener('click', function () {
-
-    if (gameRun)
-    
-    minValue = parseInt(prompt('Минимальное знание числа для игры','0'));
-    maxValue = parseInt(prompt('Максимальное знание числа для игры','1000'));
-    
-    if (isNaN(minValue) || isNaN(maxValue)) {
-        minValue = 0;
-        maxValue = 100;
-    }
-    
-    alert(`Загадайте любое целое число от ${minValue} до ${maxValue}, а я его угадаю`);
-    orderNumberField.innerText = orderNumber;
-    answerField.innerText = `Давай сыграем снова\n\u{1F60E}`;
-    searchNumber();
-    putText();
-}) 
-
+}
 
 // разделение числа на разряды: сотни, десятки, единицы
 function numberToUnits(n){
     if (n == 0){
+        sign = '';
         return [0];
+    }
+    if (n < 0){
+        sign = '-';
+        n = Math.abs(n);
+    }
+    else{
+        sign = '';
     }
     let arr = [];
     let i = 1;
@@ -128,6 +74,7 @@ function numberToUnits(n){
         n = Math.floor(n / 10);
         i *= 10
     }
+
     return arr;
 }
 
@@ -135,6 +82,9 @@ function numberToUnits(n){
 function numberToStr(number){
     let units_arr = numberToUnits(number);
     let str = '';
+
+    str += (units_arr.length == 1 && units_arr[0] == 0) ? '0' : '';
+    str += (sign == '-') ? ' минус ' : '';
 
     if (units_arr.length == 3){
         if (units_arr[0] == 100){
@@ -172,7 +122,39 @@ function numberToStr(number){
             str += ' ';
         }
         if (units_arr[0] == 10){
-            str += 'десять';
+            if (units_arr[1] == 0){
+                str += 'десять';
+            }
+            else{
+                if (units_arr[1] == 1){
+                    str += 'одиннадцать';
+                }
+                else if (units_arr[1] == 2){
+                    str += 'двенадцать';
+                }
+                else if (units_arr[1] == 3){
+                    str += 'тринадцать';
+                }
+                else if (units_arr[1] == 4){
+                    str += 'четырнадцать';
+                }
+                else if (units_arr[1] == 5){
+                    str += 'пятнадцать';
+                }
+                else if (units_arr[1] == 6){
+                    str += 'шестнадцать';
+                }
+                else if (units_arr[1] == 7){
+                    str += 'семнадцать';
+                }
+                else if (units_arr[1] == 8){
+                    str += 'восемнадцать';
+                }
+                else if (units_arr[1] == 9){
+                    str += 'девятнадцать';
+                }
+            }
+            units_arr.shift();
         }
         else if (units_arr[0] == 20){
             str += 'двадцать';
@@ -232,24 +214,64 @@ function numberToStr(number){
         else if (units_arr[0] == 9){
             str += 'девять';
         }
-    } 
+    }
+
     return (str.length <= 20) ? str : number;
 }
 
 function searchNumber(condition){
     if (condition == '<'){
+        if ((answerNumber - 1) < minValue){
+            wrongNumber();
+            return false;
+        }
         maxValue = answerNumber - 1;
     }
 
     if (condition == '>'){
+        if ((answerNumber + 1) > maxValue){
+            wrongNumber();
+            return false;
+        }
         minValue = answerNumber + 1;
     }
 
     answerNumber = Math.floor((minValue + maxValue) / 2);
+    return true;
 }
 
 function putText(){
     let t = numberToStr(answerNumber);
     answerField.innerText = `Вы загадали число ${t}?`;
 }
+
+document.getElementById('btnOver').addEventListener('click', function () {
+    guessAnotherNumber('>');
+});
+
+document.getElementById('btnLess').addEventListener('click', function () {
+    guessAnotherNumber('<');
+});
+
+document.getElementById('btnEqual').addEventListener('click', function () {
+    if (gameRun){
+        let phraseRandom = Math.round(Math.random() * 3);
+        let answerPhrase;
+        if (phraseRandom === 1) {
+            answerPhrase = 'Я всегда угадываю!\n\u{1F44C}';
+        }
+        else if (phraseRandom === 2) {
+            answerPhrase = 'Угадал!\n\u{1F60E}';
+        }
+        else {
+            answerPhrase = 'Это было просто\n\u{1F525}';
+        };
+        answerField.innerText = answerPhrase;
+        gameRun = false;
+    }
+});
+
+document.getElementById('btnRetry').addEventListener('click', function () {
+    runGame(`Давай сыграем снова\n\u{1F60E}`);
+});
 
